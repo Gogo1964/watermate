@@ -1,0 +1,26 @@
+services:
+  watermate:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: watermate:latest
+    container_name: watermate
+    restart: unless-stopped
+    # Secrets come from the file, never from this checked-in compose file.
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_PATH: /data/watermate.db
+      LOG_FORMAT: json
+    volumes:
+      - watermate-data:/data
+    # The meter usually lives on the LAN; on a single-host setup the default
+    # bridge network reaches it fine. Use `network_mode: host` if it does not.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  watermate-data:

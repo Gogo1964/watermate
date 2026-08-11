@@ -1,0 +1,13 @@
+Subject: [WaterMate] ALERT: continuous water flow for 3 h 30 min — 0.294 m³ (294 L)
+
+ALERT: CONTINUOUS WATER FLOW
+====================================================
+Flow started:      2026-08-10 23:00:00 (Europe/Berlin)
+Still running at:  2026-08-11 02:30:00 (Europe/Berlin)
+Duration so far:   3 h 30 min
+Volume:            0.294 m³ (294 L)
+Average rate:      84.0 L/h
+Threshold:         3 h
+
+The meter moved in every interval since the flow started — check for a leak
+or a tap left open. If nothing is running, consider closing the main valve.

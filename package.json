@@ -1,0 +1,32 @@
+{
+  "name": "watermate",
+  "version": "1.0.0",
+  "description": "Monitors a water meter over its HTTP CSV interface, stores readings in SQLite and sends daily reports plus high-consumption and continuous-flow alerts by email.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/index.js",
+    "poll": "node --disable-warning=ExperimentalWarning src/index.js --once",
+    "report": "node --disable-warning=ExperimentalWarning src/index.js --report",
+    "migrate": "node --disable-warning=ExperimentalWarning src/index.js --migrate",
+    "mail:test": "node --disable-warning=ExperimentalWarning src/index.js --test-mail",
+    "templates:preview": "node --disable-warning=ExperimentalWarning scripts/render-examples.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\"",
+    "test:watch": "node --disable-warning=ExperimentalWarning --test --watch test/"
+  },
+  "dependencies": {
+    "nodemailer": "^7.0.3"
+  },
+  "keywords": [
+    "water-meter",
+    "monitoring",
+    "sqlite",
+    "smtp",
+    "raspberry-pi"
+  ],
+  "license": "MIT",
+  "private": true
+}

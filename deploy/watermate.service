@@ -1,0 +1,54 @@
+[Unit]
+Description=WaterMate — water meter monitoring and reporting
+Documentation=https://github.com/your-org/watermate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=watermate
+Group=watermate
+WorkingDirectory=/opt/watermate
+
+# Secrets live in a root-owned file readable only by the service user:
+#   sudo install -o watermate -g watermate -m 600 .env /etc/watermate.env
+EnvironmentFile=/etc/watermate.env
+Environment=NODE_ENV=production
+Environment=LOG_FORMAT=json
+
+# Path depends on how Node was installed: /usr/bin/node via apt or NodeSource,
+# /usr/local/bin/node when unpacked from an official nodejs.org tarball (the
+# usual route on 32-bit armhf, which NodeSource no longer builds for).
+# Check with `which node` and adjust — systemd needs an absolute path.
+ExecStart=/usr/local/bin/node --disable-warning=ExperimentalWarning /opt/watermate/src/index.js
+
+Restart=always
+RestartSec=30
+# Give up only if it fails five times within five minutes.
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# SIGTERM triggers the graceful shutdown in src/index.js.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=watermate
+
+# Hardening — the service only needs to read its code and write its database.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/watermate
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

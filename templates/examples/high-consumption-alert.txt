@@ -1,0 +1,12 @@
+Subject: [WaterMate] ALERT: high water consumption — 1.284 m³ (1284 L) on 2026-08-10
+
+HIGH WATER CONSUMPTION ALERT
+====================================================
+Period:               2026-08-10 (Europe/Berlin)
+Measured:             1.284 m³ (1284 L)
+Threshold:            0.500 m³ (500 L)
+Above threshold by:   0.784 m³ (784 L)
+Window:               2026-08-10 00:00:00 -> 2026-08-10 19:00:00
+
+Check for taps left running, leaking fittings or unusual appliance use.
+This alert repeats at most once per 24 hour(s). Tune HIGH_CONSUMPTION_THRESHOLD to change it.

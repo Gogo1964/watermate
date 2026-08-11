@@ -1,0 +1,9 @@
+# The repository stores LF for everything textual. This project is deployed to
+# Linux (Docker, systemd), where a stray CRLF breaks shebangs, shell scripts and
+# unit files — normalising on commit keeps a Windows checkout from leaking them.
+* text=auto eol=lf
+
+# Never touched by line-ending conversion.
+*.png binary
+*.jpg binary
+*.db binary

@@ -1,0 +1,20 @@
+node_modules/
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets — only .env.example belongs in version control.
+# The wildcard also covers editor and tooling backups such as .env.bak,
+# which would otherwise slip through and commit real credentials.
+.env
+.env.*
+!.env.example
+
+
+npm-debug.log*
+*.log
+.DS_Store
+
+# Machine-local Claude Code permissions, not shared config.
+.claude/settings.local.json

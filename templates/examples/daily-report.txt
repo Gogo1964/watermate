@@ -1,0 +1,16 @@
+Subject: [WaterMate] Water report 2026-08-10 — 0.453 m³ (453 L)
+
+WATER CONSUMPTION REPORT — 2026-08-10 (Europe/Berlin)
+====================================================
+Total consumption:      0.453 m³ (453 L)
+Start meter reading:    411.7850 m³ at 2026-08-09 23:55:00
+End meter reading:      412.2383 m³ at 2026-08-10 23:55:00
+Valid readings:         277 (expected ~288)
+Busiest interval:       0.010 m³ (10.2 L) around 15:55
+Avg. last 7 day(s):     0.412 m³ (412 L)
+
+DATA QUALITY
+----------------------------------------------------
+[WARNING] Gap of 1 h without readings (~11 readings missing).
+
+Channel: main · generated 2026-08-11 12:42:45 (Europe/Berlin)
