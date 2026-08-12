@@ -373,8 +373,13 @@ docker compose -f deploy/docker-compose.yml up -d
 docker compose -f deploy/docker-compose.yml logs -f
 ```
 
-The image is `node:22-alpine` with no build step — the same Dockerfile works on
-arm64 and amd64. The database lives in a named volume.
+The image is `node:22-bookworm-slim` with no build step — the same Dockerfile
+works on armv7, arm64 and amd64. The database lives in a named volume.
+
+[`deploy/DOCKER.md`](deploy/DOCKER.md) covers the Raspberry Pi side: starting and
+updating the container by hand, and the two ways to bring it back after a reboot
+(the `restart: unless-stopped` policy, or a systemd unit that runs Compose at
+boot).
 
 ### Backups
 
