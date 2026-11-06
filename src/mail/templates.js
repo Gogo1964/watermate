@@ -421,3 +421,167 @@ export function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+/** What each meter-health cause means and what to do about it. */
+const METER_CAUSES = {
+  unreachable: {
+    title: 'Meter not reachable',
+    explain: (cause, config) =>
+      `WaterMate cannot connect to the meter at ${hostOf(config.meter.baseUrl)}` +
+      `${cause.code ? ` (${cause.code})` : ''}. The device is switched off, has lost its Wi-Fi connection, or has a new IP address.`,
+    steps: [
+      'Check that the meter has power, then restart it',
+      'Look for the device in the router\'s list of network devices',
+      'If it came back with a new IP address, update WATER_METER_BASE_URL, or give it a fixed address in the router',
+    ],
+  },
+  rows_rejected: {
+    title: 'Meter reports an error for every reading',
+    explain: (cause) =>
+      `The meter answers, but all ${cause.rejected} rows in today's file carry an error status` +
+      `${cause.reasons ? ` (${Object.entries(cause.reasons).map(([k, v]) => `${k}: ${v}`).join(', ')})` : ''}, ` +
+      'so none of them could be stored. The meter cannot read the digits.',
+    steps: [
+      'Open the meter\'s web interface and look at the latest camera image',
+      'Check the alignment and the regions of interest; the camera may have shifted',
+      'Check the lighting, and look for condensation or dirt on the lens',
+    ],
+  },
+  file_missing: {
+    title: 'Meter writes no data file',
+    explain: (cause) =>
+      `The meter is reachable, but it has no data file for ${cause.date}. It is running but not logging readings.`,
+    steps: [
+      'Check in the meter\'s web interface that data logging is enabled',
+      'Check the meter\'s clock and its SD card',
+    ],
+  },
+  no_new_data: {
+    title: 'Meter delivers no new readings',
+    explain: () => 'The meter is reachable, but its data file has not received a new valid reading.',
+    steps: ['Open the meter\'s web interface and check that recognition is still running', 'Restart the meter'],
+  },
+  http_error: {
+    title: 'Meter returns an HTTP error',
+    explain: (cause) => `The meter answers with an error: ${cause.detail}.`,
+    steps: ['Restart the meter', 'Check WATER_METER_BASE_URL and the file pattern'],
+  },
+  unknown: {
+    title: 'No valid readings',
+    explain: () => 'WaterMate has received no valid readings; the poll gave no further detail.',
+    steps: ['Check the WaterMate logs', 'Open the meter\'s web interface'],
+  },
+};
+
+export function describeMeterCause(cause) {
+  return METER_CAUSES[cause?.kind] ?? METER_CAUSES.unknown;
+}
+
+export function renderMeterStaleAlert({ config, lastValidAt, lastValue, ageMs, cause, repeat = false, now = Date.now() }) {
+  const tz = config.timezone;
+  const info = describeMeterCause(cause);
+  const since = lastValidAt != null ? formatDuration(ageMs) : `at least ${formatDuration(ageMs)}`;
+
+  const subject = `${repeat ? 'REMINDER' : 'ALERT'}: no meter data for ${since} — ${info.title.toLowerCase()}`;
+  const explanation = info.explain(cause, config);
+
+  const rows = [
+    ['Cause', `<strong style="color:${PALETTE.alert}">${escapeHtml(info.title)}</strong>`],
+    ['Last valid reading', lastValidAt != null ? formatInstant(lastValidAt, tz) : 'none yet'],
+    ['Last meter value', lastValue != null ? formatVolume(lastValue, config, { decimals: 4 }) : '–'],
+    ['Without data for', since],
+    ['Meter', `<code>${escapeHtml(config.meter.baseUrl)}</code>`],
+    ['Alert threshold', `${config.meterHealth.staleHours} h without a valid reading`],
+  ];
+
+  const html = layout({
+    title: repeat ? 'Still no data from the water meter' : 'No data from the water meter',
+    subtitle: escapeHtml(info.title),
+    accent: PALETTE.warn,
+    body: [
+      hero(since, 'without a valid reading', PALETTE.warn),
+      `<p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:${PALETTE.ink}">${escapeHtml(explanation)}
+         Until the meter delivers data again, the reports show no consumption and leak detection is not active.</p>`,
+      table(rows),
+      callout(
+        'Suggested next steps',
+        `<ul style="margin:8px 0 0;padding-left:20px;color:${PALETTE.ink}">${info.steps
+          .map((step) => `<li>${escapeHtml(step)}</li>`)
+          .join('')}</ul>`,
+      ),
+      note(
+        config.meterHealth.reAlertHours > 0
+          ? `A reminder follows every ${config.meterHealth.reAlertHours} hour(s) while no data arrives. You will get a message as soon as data arrives again.`
+          : 'No reminder is sent. You will get a message as soon as data arrives again.',
+      ),
+    ].join('\n'),
+    footer: `Channel <code>${escapeHtml(config.meter.channel)}</code> · sent ${formatInstant(now, tz)}`,
+  });
+
+  const text = [
+    `${repeat ? 'REMINDER' : 'ALERT'}: NO DATA FROM THE WATER METER`,
+    ''.padEnd(52, '='),
+    `Cause:               ${info.title}`,
+    `Last valid reading:  ${lastValidAt != null ? formatInstant(lastValidAt, tz) : 'none yet'}`,
+    `Without data for:    ${since}`,
+    `Meter:               ${config.meter.baseUrl}`,
+    '',
+    explanation,
+    '',
+    'Next steps:',
+    ...info.steps.map((step) => `  - ${step}`),
+  ].join('\n');
+
+  return { subject, html, text };
+}
+
+export function renderMeterRecoveredAlert({ config, lastValidBefore, firstAlertAt, latestAt, latestValue, lastCause }) {
+  const tz = config.timezone;
+  const gapMs = lastValidBefore != null ? latestAt - lastValidBefore : null;
+  const info = lastCause ? describeMeterCause(lastCause) : null;
+
+  const subject = `OK: water meter delivers data again${gapMs != null ? ` after ${formatDuration(gapMs)}` : ''}`;
+
+  const rows = [
+    ['Data gap', gapMs != null ? formatDuration(gapMs) : '–'],
+    ['Last reading before gap', lastValidBefore != null ? formatInstant(lastValidBefore, tz) : '–'],
+    ['First reported', formatInstant(firstAlertAt, tz)],
+    ['Latest reading', formatInstant(latestAt, tz)],
+    ['Meter value', formatVolume(latestValue, config, { decimals: 4 })],
+  ];
+  if (info) rows.splice(1, 0, ['Last known cause', escapeHtml(info.title)]);
+
+  const html = layout({
+    title: 'Water meter is back',
+    subtitle: 'valid readings are arriving again',
+    accent: PALETTE.ok,
+    body: [
+      hero(gapMs != null ? formatDuration(gapMs) : 'OK', 'data gap closed', PALETTE.ok),
+      table(rows),
+      note(
+        'Data the meter logged during the gap is fetched for up to ' +
+          `${config.poll.backfillDays} day(s). Readings that it marked as errors cannot be recovered.`,
+      ),
+    ].join('\n'),
+    footer: `Channel <code>${escapeHtml(config.meter.channel)}</code> · sent ${formatInstant(Date.now(), tz)}`,
+  });
+
+  const text = [
+    'OK: WATER METER DELIVERS DATA AGAIN',
+    ''.padEnd(52, '='),
+    `Data gap:        ${gapMs != null ? formatDuration(gapMs) : '–'}`,
+    ...(info ? [`Last cause:      ${info.title}`] : []),
+    `Latest reading:  ${formatInstant(latestAt, tz)}`,
+    `Meter value:     ${formatVolume(latestValue, config, { decimals: 4 })}`,
+  ].join('\n');
+
+  return { subject, html, text };
+}
+
+function hostOf(url) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}

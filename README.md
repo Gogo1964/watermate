@@ -119,6 +119,7 @@ alert carries a dedup key and a cooldown, both stored in the `alerts` table:
 | High consumption (daily) | channel + calendar day | `HIGH_CONSUMPTION_COOLDOWN_HOURS` (default: once per day) |
 | High consumption (window) | channel + clock hour | `HOURLY_HIGH_CONSUMPTION_COOLDOWN_HOURS` |
 | Continuous flow | channel + episode start | Once, or every `CONTINUOUS_FLOW_REALERT_HOURS` |
+| No meter data | channel | Every `METER_STALE_REALERT_HOURS`; cleared, with an all-clear mail, once data returns |
 | Daily report | report date (`daily_reports` table) | Never |
 
 The key is written **after** a successful send, so an SMTP outage retries on the
@@ -218,6 +219,10 @@ likely to change:
 | `CONTINUOUS_FLOW_DURATION_HOURS` | `3` | Flow longer than this alerts |
 | `FLOW_DETECTION_THRESHOLD` | `0.001` | Minimum increase per interval counting as flow |
 | `CONTINUOUS_FLOW_REALERT_HOURS` | `0` | Reminder interval; `0` = alert only once |
+| `METER_STALE_ALERTS_ENABLED` | `true` | Alert when the meter delivers no valid data |
+| `METER_STALE_HOURS` | `2` | Time without a valid reading that triggers it |
+| `METER_STALE_REALERT_HOURS` | `24` | Reminder interval; `0` = alert only once |
+| `METER_RECOVERY_ALERTS_ENABLED` | `true` | Send an all-clear when data arrives again |
 | `ALERT_MAX_AGE_HOURS` | `24` | Suppress alerts derived from older readings |
 
 ### Data quality
@@ -290,13 +295,15 @@ At startup it also catches up on any reports missed while it was down.
 
 ## Emails
 
-Three distinct subjects, each as HTML with a plain-text alternative:
+Each email is sent as HTML with a plain-text alternative:
 
 | Type | Subject |
 | ---- | ------- |
 | Daily report | `[WaterMate] Water report 2026-08-10 — 0.453 m³ (453 L)` |
 | High consumption | `[WaterMate] ALERT: high water consumption — 1.284 m³ (1284 L) on 2026-08-10` |
 | Continuous flow | `[WaterMate] ALERT: continuous water flow for 3 h 30 min — 0.294 m³ (294 L)` |
+| No meter data | `[WaterMate] ALERT: no meter data for 3 h — meter not reachable` |
+| Meter back | `[WaterMate] OK: water meter delivers data again after 26 h` |
 
 The daily report contains the date, total consumption, start and end meter
 readings, the number of valid readings against the number expected, an hourly
@@ -462,6 +469,14 @@ episode start and end.
 `anomalies` for a `meter_decrease`. The affected period contributes nothing;
 totals stay correct from the new reading onwards.
 
+**"No meter data" alert.** The mail names the cause found by the latest poll:
+*meter not reachable* (the device is off, off Wi-Fi or has a new IP; see the
+error code), *meter reports an error for every reading* (open the meter's web
+interface and check the camera image and alignment), *meter writes no data
+file*, or *no new readings*. An all-clear follows once valid readings arrive.
+Readings the meter logged during the gap are back-filled for `BACKFILL_DAYS`.
+Rows it marked as errors are not.
+
 **`SQLITE_BUSY`.** Two processes are using the same database file. Only one
 instance may run per database.
 
@@ -484,6 +499,7 @@ src/
   monitor/
     flowMonitor.js      incremental analysis pass after each ingest
     highConsumption.js  threshold checks
+    meterHealth.js      "no valid data" alert and all-clear
     alertManager.js     dedup, cooldown, dispatch
   reports/dailyReport.js  build, send, record; catch-up
   mail/

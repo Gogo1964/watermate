@@ -108,7 +108,15 @@ export function createCollector({ repository, client, config, logger, flowMonito
         lastError: error.message,
       });
       log.error('Failed to download meter file', { date, failCount, error });
-      return { date, status: 'error', error: error.message, inserted: 0 };
+      return {
+        date,
+        status: 'error',
+        error: error.message,
+        // `fetch failed` alone says nothing; the socket error code (EHOSTUNREACH,
+        // ECONNREFUSED, …) is what tells "device gone" from "device busy".
+        errorCode: error.cause?.code ?? error.code ?? error.name ?? null,
+        inserted: 0,
+      };
     }
 
     if (response.status === 'not-modified') {
@@ -177,7 +185,7 @@ export function createCollector({ repository, client, config, logger, flowMonito
       sourceFile: response.url,
     });
 
-    logInvalidRows(date, parsed);
+    const rejectReasons = logInvalidRows(date, parsed);
 
     const { inserted, conflicts } = repository.insertReadings(parsed.rows, {
       sourceFile: response.url,
@@ -225,6 +233,7 @@ export function createCollector({ repository, client, config, logger, flowMonito
       inserted,
       validRows: parsed.rows.length,
       invalidRows: parsed.invalid.length,
+      rejectReasons,
       conflicts: conflicts.length,
     };
   }
@@ -236,7 +245,7 @@ export function createCollector({ repository, client, config, logger, flowMonito
   }
 
   function logInvalidRows(date, parsed) {
-    if (parsed.invalid.length === 0) return;
+    if (parsed.invalid.length === 0) return {};
     const byReason = {};
     for (const row of parsed.invalid) {
       byReason[row.reason] = (byReason[row.reason] ?? 0) + 1;
@@ -245,6 +254,7 @@ export function createCollector({ repository, client, config, logger, flowMonito
     for (const row of parsed.invalid.slice(0, 3)) {
       log.debug('Rejected row', { date, line: row.lineNumber, reason: row.reason, detail: row.detail });
     }
+    return byReason;
   }
 
   return { collect, collectDate, datesToFetch };

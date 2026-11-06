@@ -1,0 +1,15 @@
+Subject: [WaterMate] ALERT: no meter data for 3 h — meter not reachable
+
+ALERT: NO DATA FROM THE WATER METER
+====================================================
+Cause:               Meter not reachable
+Last valid reading:  2026-08-10 22:00:00 (Europe/Berlin)
+Without data for:    3 h
+Meter:               http://192.168.1.50/fileserver/log/data
+
+WaterMate cannot connect to the meter at 192.168.1.50 (EHOSTUNREACH). The device is switched off, has lost its Wi-Fi connection, or has a new IP address.
+
+Next steps:
+  - Check that the meter has power, then restart it
+  - Look for the device in the router's list of network devices
+  - If it came back with a new IP address, update WATER_METER_BASE_URL, or give it a fixed address in the router

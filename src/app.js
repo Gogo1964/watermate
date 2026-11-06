@@ -5,6 +5,7 @@ import { createMeterClient } from './meter/client.js';
 import { createCollector } from './meter/collector.js';
 import { createFlowMonitor } from './monitor/flowMonitor.js';
 import { createHighConsumptionMonitor } from './monitor/highConsumption.js';
+import { createMeterHealthMonitor } from './monitor/meterHealth.js';
 import { createAlertManager } from './monitor/alertManager.js';
 import { createDailyReportService } from './reports/dailyReport.js';
 import { createMailer } from './mail/mailer.js';
@@ -40,6 +41,7 @@ export function createApp({ config, logger, deps = {} }) {
   const flowMonitor = deps.flowMonitor ?? createFlowMonitor({ repository, config, alerts, logger });
   const highConsumption =
     deps.highConsumption ?? createHighConsumptionMonitor({ repository, config, alerts, logger });
+  const meterHealth = deps.meterHealth ?? createMeterHealthMonitor({ repository, config, alerts, logger });
   const reports = deps.reports ?? createDailyReportService({ repository, config, mailer, logger });
   const collector =
     deps.collector ?? createCollector({ repository, client, config, logger, flowMonitor });
@@ -53,7 +55,8 @@ export function createApp({ config, logger, deps = {} }) {
     if (collected.skipped) return collected;
 
     const thresholds = await highConsumption.check(now);
-    return { ...collected, thresholds };
+    const health = await meterHealth.check(collected, now);
+    return { ...collected, thresholds, health };
   }
 
   async function start() {
@@ -166,6 +169,7 @@ export function createApp({ config, logger, deps = {} }) {
     alerts,
     flowMonitor,
     highConsumption,
+    meterHealth,
     scheduler,
   };
 }

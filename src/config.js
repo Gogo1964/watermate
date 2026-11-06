@@ -97,6 +97,13 @@ export function loadConfig({ env = process.env, envFile = path.join(ROOT, '.env'
       reAlertHours: read.number('CONTINUOUS_FLOW_REALERT_HOURS', 0, { min: 0 }),
     },
 
+    meterHealth: {
+      enabled: read.boolean('METER_STALE_ALERTS_ENABLED', true),
+      staleHours: read.number('METER_STALE_HOURS', 2, { min: 0, exclusiveMin: true }),
+      reAlertHours: read.number('METER_STALE_REALERT_HOURS', 24, { min: 0 }),
+      recoveryAlerts: read.boolean('METER_RECOVERY_ALERTS_ENABLED', true),
+    },
+
     alerts: {
       maxAgeHours: read.number('ALERT_MAX_AGE_HOURS', 24, { min: 0, exclusiveMin: true }),
     },
@@ -140,6 +147,8 @@ export function loadConfig({ env = process.env, envFile = path.join(ROOT, '.env'
   config.highConsumption.cooldownMs = Math.round(config.highConsumption.cooldownHours * 3_600_000);
   config.highConsumption.hourlyCooldownMs = Math.round(config.highConsumption.hourlyCooldownHours * 3_600_000);
   config.highConsumption.hourlyWindowMs = Math.round(config.highConsumption.hourlyWindowMinutes * 60_000);
+  config.meterHealth.staleMs = Math.round(config.meterHealth.staleHours * 3_600_000);
+  config.meterHealth.reAlertMs = Math.round(config.meterHealth.reAlertHours * 3_600_000);
   config.alerts.maxAgeMs = Math.round(config.alerts.maxAgeHours * 3_600_000);
   config.mail.alertTo = config.mail.alertTo ?? config.mail.to;
 

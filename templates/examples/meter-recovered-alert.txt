@@ -1,0 +1,8 @@
+Subject: [WaterMate] OK: water meter delivers data again after 26 h
+
+OK: WATER METER DELIVERS DATA AGAIN
+====================================================
+Data gap:        26 h
+Last cause:      Meter reports an error for every reading
+Latest reading:  2026-08-12 00:00:00 (Europe/Berlin)
+Meter value:     24790.6123 m³ (24790612 L)

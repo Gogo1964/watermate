@@ -15,6 +15,8 @@ import {
   renderDailyReport,
   renderHighConsumptionAlert,
   renderContinuousFlowAlert,
+  renderMeterStaleAlert,
+  renderMeterRecoveredAlert,
 } from '../src/mail/templates.js';
 import { toLocalDate, localDayBounds } from '../src/util/time.js';
 
@@ -94,6 +96,31 @@ write(
       volume: 0.294,
       repeat: false,
     },
+  }),
+);
+
+const outageStart = start + 22 * 3_600_000;
+write(
+  'meter-stale-alert',
+  renderMeterStaleAlert({
+    config,
+    lastValidAt: outageStart,
+    lastValue: 24790.4989,
+    ageMs: 3 * 3_600_000,
+    cause: { kind: 'unreachable', code: 'EHOSTUNREACH', detail: 'fetch failed' },
+    now: outageStart + 3 * 3_600_000,
+  }),
+);
+
+write(
+  'meter-recovered-alert',
+  renderMeterRecoveredAlert({
+    config,
+    lastValidBefore: outageStart,
+    firstAlertAt: outageStart + 2 * 3_600_000,
+    latestAt: outageStart + 26 * 3_600_000,
+    latestValue: 24790.6123,
+    lastCause: { kind: 'rows_rejected', rejected: 97, reasons: { meter_error: 97 } },
   }),
 );
 
